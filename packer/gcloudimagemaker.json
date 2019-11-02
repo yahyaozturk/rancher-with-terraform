@@ -1,0 +1,25 @@
+  {
+    "variables": {
+        "zone":         "{{env `AWS_ACCESS_KEY_ID`}}",
+        "project_id":   "{{env `AWS_SECRET_ACCESS_KEY`}}",
+        "source_image": "us-east-1"
+    },
+    "builders": [
+          {
+            "type": "googlecompute",
+            "account_file": "../Kaponex/ContinuousIntegration.json",
+            "project_id": "clear-storm-246808",
+            "source_image_family": "ubuntu-1604-lts",
+            "ssh_username": "ubuntu",
+            "zone": "europe-west1-b",
+            "disk_size": "20",
+            "image_name": "docker-host"
+          }
+        ],
+    "provisioners": [
+         {
+            "type": "shell",
+            "script": "./dockerinstall.sh"
+        }
+    ]
+}

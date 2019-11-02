@@ -1,0 +1,7 @@
+/Kaponex
+.DS_Store
+/Demo/.terraform
+Demo/terraform.tfstate
+Demo/terraform.tfstate.backup
+/.terraform
+Demo/ContinuousIntegration.json

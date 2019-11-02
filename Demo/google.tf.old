@@ -1,0 +1,130 @@
+variable "gce_ssh_user" {
+  default = "yahyaozturk"
+}
+variable "gce_ssh_pub_key_file" {
+  default = "googlecloud.pub"
+}
+variable "gce_ssh_private_key_file" {
+  default = "googlecloud"
+}
+variable "gce_project" {
+  default = "data-oasis-217410"
+}
+variable "gce_zone" {
+  default = "europe-west3-b"
+}
+variable "gce_machinetype" {
+  default = "n1-standard-1"
+}
+resource "google_compute_instance" "server" {
+  project      = "${var.gce_project}"
+  count        = 1
+  name         = "rancher-server-${count.index+1}"
+  machine_type = "${var.gce_machinetype}"
+  zone         = "${var.gce_zone}"
+
+  tags = ["http-server", "https-server"]
+
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1604-lts"
+      size  = 30
+    }
+  }
+
+  // Local SSD disk
+  //scratch_disk {
+  //}
+
+scheduling{
+  automatic_restart = true
+}
+
+  network_interface {
+    network = "default"
+
+    access_config {
+      // Ephemeral IP
+    }
+  }
+
+  metadata {
+    sshKeys = "${var.gce_ssh_user}:${file(var.gce_ssh_pub_key_file)}"
+  }
+
+  metadata_startup_script = "echo hi > /test.txt"
+
+  provisioner "remote-exec" {
+    connection {
+      type     = "ssh"
+      user     = "${var.gce_ssh_user}"
+      private_key = "${file(var.gce_ssh_private_key_file)}"
+    }
+    inline = [<<EOF
+      sudo apt-get install
+      sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+      sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      sudo apt-get update
+      sudo apt-get install -y docker-ce
+      sudo docker run -d --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher
+      EOF
+    ]
+  }
+}
+
+resource "google_compute_instance" "slaves" {
+  project      = "${var.gce_project}"
+  count        = 2
+  name         = "rancher-node-${count.index+1}"
+  machine_type = "${var.gce_machinetype}"
+  zone         = "${var.gce_zone}"
+
+  tags = ["http-server", "https-server"]
+
+  boot_disk {
+    initialize_params {
+      image = "ubuntu-os-cloud/ubuntu-1604-lts"
+      size  = 30
+    }
+  }
+
+  // Local SSD disk
+  //scratch_disk {
+  //}
+
+scheduling{
+  automatic_restart = true
+}
+
+  network_interface {
+    network = "default"
+
+    access_config {
+      // Ephemeral IP
+    }
+  }
+
+  metadata {
+    sshKeys = "${var.gce_ssh_user}:${file(var.gce_ssh_pub_key_file)}"
+  }
+
+  metadata_startup_script = "echo hi > /test.txt"
+
+  provisioner "remote-exec" {
+    connection {
+      type     = "ssh"
+      user     = "${var.gce_ssh_user}"
+      private_key = "${file(var.gce_ssh_private_key_file)}"
+    }
+    inline = [<<EOF
+      sudo apt-get install
+      sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+      sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      sudo apt-get update
+      sudo apt-get install -y docker-ce
+      EOF
+    ]
+  }
+}
